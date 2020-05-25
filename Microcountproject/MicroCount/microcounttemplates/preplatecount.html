@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h1>Plate Count</h1>
+        <article class="media content-section">
+            <img class="img-fluid mx-auto images" src="{{ url_for('static', filename='sampleplates/' + images_get_id) }}"></img>
+            <div class="media-body">
+              <div class="article-metadata">
+                <a class="mr-2" href="#">{{ images_forward.author.username }}</a>
+                 <form>
+                      <div class="form-group">
+                          {{ form.submit(class="btn btn-secondary btn-sm mt-1 mb-1") }}
+                          {{ total_count }}
+                      </div>
+                 </form>
+              </div>
+              <h2 class="article-title">{{ images_forward.batch_number }}</h2>
+              <p class="article-content">{{ images_forward.extranotes }}</p>
+            </div>
+       </article>
+{% endblock content %}
+
+o<!DOCTYPE html>
+<html lang="en">
+<head>
+   {% if title %}
+        <title>MicroCount - {{title}}</title>
+    {% else %}
+        <title>MicroCount</title>
+    {% endif %}
+
+</head>
+<body>
+
+</body>
+</html>

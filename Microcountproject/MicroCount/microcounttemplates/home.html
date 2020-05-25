@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block content %}
+<div>
+    {% if current_user.is_authenticated %}
+    <div>
+        <h1>Hello, {{ (current_user.username) }}</h1>
+            <p> Would You Like To
+                <a href="{{ url_for('upload_file') }}">Upload Plates?</a>
+            </p>
+    </div>
+    {% else %}
+    <div  style="text-align:center; margin-top:100px; " >
+        <a class="btn btn-outline-info" type="button"  style="text-align:center " href="{{ url_for('login') }}">Log in</a>
+    </div>
+</div>
+    {% endif %}
+{% endblock content %}
