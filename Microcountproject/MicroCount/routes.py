@@ -3,7 +3,7 @@ import secrets
 from PIL import Image
 from flask import render_template, url_for, flash, redirect, request
 from MicroCount.microcountforms import RegistrationForm, LoginForm, UpdateAccountForm, RequestResetForm, \
-    ResetPasswordForm, UploadPlateForm, CountPlateForm
+    ResetPasswordForm, UploadPlateForm, CountPlateForm, DeleteImageForm
 from urllib.request import urlopen
 from MicroCount import db, app, bcrypt, mail
 from MicroCount.models import User, Images
@@ -11,6 +11,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 from flask_mail import Message
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 
@@ -136,7 +137,6 @@ def reset_token(token):
         flash('The password has been updated! You may log in now', 'success')
         return redirect(url_for('login'))
     return render_template('reset_token.html', title='Reset Password', form=form)
-
 def save_picture(form_plate_image):
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(form_plate_image.filename)
@@ -182,49 +182,75 @@ def previousuploads():
         image_batch = image_query.batch_number
         image_location = image_query.location
         image_info = f"{image_batch} - {image_location}"
+
     return render_template('stored.html', title='Stored Uploads', images_folder=images_folder, image_info=image_info, image_query=image_query)
+
 
 
 def colony_detection(images_get_id):
     # Read image
-    im = cv2.imread(images_get_id, cv2.IMREAD_COLOR)
+
+    im = plt.imread(('./MicroCount/Static/sampleplates/' + images_get_id))
+
+    im = cv2.resize(im, (502, 502),
+                    interpolation=cv2.INTER_NEAREST)
+
+    # Blur image to remove noise
+    im = cv2.GaussianBlur(im, (5, 5), 0)
 
     # Setup SimpleBlobDetector parameters.
     params = cv2.SimpleBlobDetector_Params()
 
     # Change thresholds
-    params.minThreshold = 0
-    params.maxThreshold = 255
-
-    # Set edge gradient
-    params.thresholdStep = 5
+    params.minThreshold = 5;
+    params.maxThreshold = 300;
 
     # Filter by Area.
     params.filterByArea = True
     params.minArea = 10
 
-    # Set up the detector with default parameters.
-    detector = cv2.SimpleBlobDetector_create(params)
+    # Filter By Colour
+    params.filterByColor = 1
+    params.blobColor = 255
 
-    # Detect blobs.
+    # Filter by Circularity
+    params.filterByCircularity = True
+    params.minCircularity = 0.0001
+
+    # Filter by Convexity
+    params.filterByConvexity = True
+    params.minConvexity = 0.87
+
+    # Filter by Inertia
+    params.filterByInertia = True
+    params.minInertiaRatio = 0.01
+
+    # Create a detector with the parameters
+    ver = (cv2.__version__).split('.')
+    if int(ver[0]) < 3:
+        detector = cv2.SimpleBlobDetector(params)
+    else:
+        detector = cv2.SimpleBlobDetector_create(params)
+
+    # Detect blobs. #
     keypoints = detector.detect(im)
 
     # Draw detected blobs as red circles.
-    # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures
-    # the size of the circle corresponds to the size of blob
-    total_count = 0
-    for i in keypoints:
-        total_count = total_count + 1
-
-    '''im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0, 0, 255),
+    # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+    im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0, 0, 255),
                                           cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-    # Show blobs
+    # Show keypoints
     cv2.imshow("Keypoints", im_with_keypoints)
-    cv2.waitKey(0)'''
+    cv2.waitKey(0)
+    length = len(keypoints)
 
-    return total_count
+    return flash(f'Number of Colonies detected is {length}', 'success')
 
+
+def clear_data(images_get_id):
+    os.remove(images_get_id)
+    flash ("File Removed!", 'success')
 
 
 @app.route("/previousuploads/<int:Images_id>/preplatecount", methods=['GET', 'POST'])
@@ -232,13 +258,15 @@ def preplatecount(Images_id):
     images_forward = Images.query.filter_by(id=Images_id).first()
     images_get_id = images_forward.images
     form = CountPlateForm()
+    form2 = DeleteImageForm()
     total_count= colony_detection(images_get_id)
     if form.validate_on_submit():
-        total_count = colony_detection(images_get_id)
+        total_count = colony_detection( images_get_id)
         globals().update(total_count)
-        flash('detection successful', 'success')
+        flash(f'detection successful, {total_count} colonies', 'success')
         return redirect(url_for('preplatecount'))
 
-    return render_template('preplatecount.html', title='Plate Count', images_get_id=images_get_id, images_forward=images_forward, form=form, total_count=total_count)
+
+    return render_template('preplatecount.html', title='Plate Count', images_get_id=images_get_id, images_forward=images_forward,form2=form2 , form=form, total_count=total_count)
 
 

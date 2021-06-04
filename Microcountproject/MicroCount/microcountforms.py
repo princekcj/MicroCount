@@ -83,3 +83,6 @@ class UploadPlateForm(FlaskForm):
 
 class CountPlateForm(FlaskForm):
     submit = SubmitField('Count Plate')
+
+class DeleteImageForm(FlaskForm):
+    submit = SubmitField('Delete Image')

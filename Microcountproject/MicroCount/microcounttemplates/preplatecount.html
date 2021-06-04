@@ -2,7 +2,8 @@
 {% block content %}
     <h1>Plate Count</h1>
         <article class="media content-section">
-            <img class="img-fluid mx-auto images" src="{{ url_for('static', filename='sampleplates/' + images_get_id) }}"></img>
+            <img class="img-fluid mx-auto images"
+                 src="{{ url_for('static', filename='sampleplates/' + images_get_id) }}"/>
             <div class="media-body">
               <div class="article-metadata">
                 <a class="mr-2" href="#">{{ images_forward.author.username }}</a>
@@ -11,6 +12,9 @@
                           {{ form.submit(class="btn btn-secondary btn-sm mt-1 mb-1") }}
                           {{ total_count }}
                       </div>
+                     <div class="form-group">
+                         {{ form2.submit(class="btn btn-secondary btn-sm mt-1 mb-1")  }}
+                     </div>
                  </form>
               </div>
               <h2 class="article-title">{{ images_forward.batch_number }}</h2>
